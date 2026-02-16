@@ -7,106 +7,207 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
-        #map { height: 100vh; }
-        .legend {
+        #map { height: 100vh; width: 100%; }
+        #controles {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+        }
+        .legenda {
             background: white;
             padding: 10px;
             border-radius: 5px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.3);
             line-height: 1.5;
         }
-        .legend i {
+        .legenda i {
             display: inline-block;
             width: 18px;
             height: 18px;
             border-radius: 50%;
             margin-right: 5px;
         }
+        .atualizar-btn {
+            background: #003366;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .atualizar-btn:hover {
+            background: #004488;
+        }
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            padding: 15px;
+            border-radius: 5px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            z-index: 2000;
+            display: none;
+        }
     </style>
 </head>
 <body>
+    <div id="controles">
+        <button class="atualizar-btn" onclick="carregarJogos()">🔄 Atualizar Dados</button>
+    </div>
     <div id="map"></div>
+    <div class="loading" id="loading">Carregando jogos...</div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        const map = L.map('map');
+        // Banco de dados de estádios (pode ser expandido)
+        const estadios = {
+            "Arena Castelão": [-3.806, -38.526],
+            "Estádio Moisés Lucarelli": [-22.912, -47.050],
+            "Ilha do Retiro": [-8.063, -34.871],
+            "Arena Fonte Nova": [-12.978, -38.504],
+            "Estádio Independência": [-19.912, -43.918],
+            "Arena da Amazônia": [-3.083, -60.028],
+            "Estádio Serra Dourada": [-16.698, -49.236],
+            "Arena Pantanal": [-15.606, -56.116],
+            "Estádio Heriberto Hülse": [-28.716, -49.424],
+            "Estádio Orlando Scarpelli": [-27.585, -48.566],
+            "Estádio Presidente Vargas": [-3.745, -38.537],
+            "Estádio Romeirão": [-6.439, -39.304],
+            "Estádio Domingão": [-12.954, -38.392]
+        };
 
+        // Inicializar mapa
+        const map = L.map('map').setView([-15.788, -47.879], 4);
+        
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors'
         }).addTo(map);
 
-        // Função para determinar status do resultado
-        function getResultadoStatus(jogo) {
-            if (jogo.resultado === "A definir") return "futuro";
+        // Variável para armazenar os marcadores atuais
+        let marcadoresAtuais = [];
+
+        // Função para determinar cor baseada no resultado
+        function getCorResultado(jogo) {
+            if (jogo.resultado === "A definir") return '#6c757d'; // cinza
+            
+            // Extrair gols do Ceará (formato: "Ceará X x Y Adversário")
             const partes = jogo.resultado.split(' x ');
-            if (partes.length !== 2) return "desconhecido";
+            if (partes.length !== 2) return '#6c757d';
+            
             const golsCeara = parseInt(partes[0].replace('Ceará ', ''));
             const golsAdv = parseInt(partes[1]);
-            if (isNaN(golsCeara) || isNaN(golsAdv)) return "desconhecido";
-            if (golsCeara > golsAdv) return "vitoria";
-            if (golsCeara < golsAdv) return "derrota";
-            return "empate";
+            
+            if (isNaN(golsCeara) || isNaN(golsAdv)) return '#6c757d';
+            if (golsCeara > golsAdv) return '#28a745'; // verde (vitória)
+            if (golsCeara < golsAdv) return '#dc3545'; // vermelho (derrota)
+            return '#ffc107'; // amarelo (empate)
         }
 
         // Função para criar ícone colorido
-        function getIconePorStatus(status) {
-            const cores = {
-                vitoria: '#28a745',
-                derrota: '#dc3545',
-                empate: '#ffc107',
-                futuro: '#6c757d',
-                desconhecido: '#6c757d'
-            };
-            const cor = cores[status] || cores.desconhecido;
+        function criarIcone(cor) {
             return L.divIcon({
-                html: `<div style="background-color: ${cor}; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 4px rgba(0,0,0,0.5);"></div>`,
-                iconSize: [20, 20],
-                popupAnchor: [0, -10]
+                html: `<div style="background-color: ${cor}; width: 22px; height: 22px; border-radius: 50%; border: 3px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.3);"></div>`,
+                iconSize: [22, 22],
+                popupAnchor: [0, -15],
+                className: 'marcador-personalizado'
             });
         }
 
-        // Carregar dados de um arquivo JSON
-        fetch('jogos.json')
-            .then(response => response.json())
-            .then(jogos => {
+        // Função principal para carregar e exibir jogos
+        async function carregarJogos() {
+            // Mostrar indicador de carregamento
+            document.getElementById('loading').style.display = 'block';
+            
+            // Limpar marcadores antigos
+            marcadoresAtuais.forEach(m => map.removeLayer(m));
+            marcadoresAtuais = [];
+            
+            try {
+                // Carregar dados do arquivo JSON
+                const response = await fetch('jogos.json');
+                const jogos = await response.json();
+                
+                // Array para guardar os marcadores (para ajuste de zoom)
                 const markers = [];
+                
+                // Processar cada jogo
                 jogos.forEach(jogo => {
-                    const status = getResultadoStatus(jogo);
-                    const icone = getIconePorStatus(status);
-                    const marker = L.marker(jogo.coords, { icon: icone }).addTo(map);
-                    marker.bindPopup(`
-                        <b>Ceará x ${jogo.adversario}</b><br>
-                        📅 ${jogo.data}<br>
-                        📍 ${jogo.local}<br>
-                        <strong>${jogo.resultado}</strong>
-                    `);
-                    markers.push(marker);
+                    // Buscar coordenadas do estádio
+                    const coords = estadios[jogo.estadio];
+                    
+                    if (!coords) {
+                        console.warn(`Estádio não encontrado: ${jogo.estadio}`);
+                        return;
+                    }
+                    
+                    // Determinar cor do marcador
+                    const cor = getCorResultado(jogo);
+                    const icone = criarIcone(cor);
+                    
+                    // Criar popup com informações detalhadas
+                    const popupContent = `
+                        <div style="min-width: 200px;">
+                            <h3 style="margin: 0 0 5px 0; color: #003366;">⚽ Ceará x ${jogo.adversario}</h3>
+                            <p style="margin: 3px 0;"><strong>📅 Data:</strong> ${jogo.data} ${jogo.horario ? 'às ' + jogo.horario : ''}</p>
+                            <p style="margin: 3px 0;"><strong>🏟️ Local:</strong> ${jogo.estadio}</p>
+                            <p style="margin: 3px 0;"><strong>🏆 Competição:</strong> ${jogo.competicao || 'Não informada'}</p>
+                            <p style="margin: 3px 0;"><strong>📺 Transmissão:</strong> ${jogo.transmissao || 'A definir'}</p>
+                            <p style="margin: 8px 0 0 0; font-size: 1.2em; font-weight: bold; color: ${cor};">
+                                ${jogo.resultado}
+                            </p>
+                        </div>
+                    `;
+                    
+                    // Criar e adicionar marcador
+                    const marcador = L.marker(coords, { icon: icone })
+                        .bindPopup(popupContent);
+                    
+                    marcador.addTo(map);
+                    marcadoresAtuais.push(marcador);
+                    markers.push(marcador);
                 });
-
-                // Ajustar zoom
+                
+                // Ajustar zoom para mostrar todos os marcadores
                 if (markers.length > 0) {
                     const group = L.featureGroup(markers);
                     map.fitBounds(group.getBounds().pad(0.2));
                 }
-
-                // Legenda
-                const legend = L.control({ position: 'bottomright' });
-                legend.onAdd = function() {
-                    const div = L.DomUtil.create('div', 'legend');
-                    div.innerHTML = `
-                        <div><i style="background:#28a745;"></i> Vitória</div>
-                        <div><i style="background:#dc3545;"></i> Derrota</div>
-                        <div><i style="background:#ffc107;"></i> Empate</div>
-                        <div><i style="background:#6c757d;"></i> Futuro / Desconhecido</div>
-                    `;
-                    return div;
-                };
-                legend.addTo(map);
-            })
-            .catch(error => {
+                
+                // Adicionar legenda (se não existir)
+                if (!document.querySelector('.legenda')) {
+                    const legend = L.control({ position: 'bottomright' });
+                    legend.onAdd = function() {
+                        const div = L.DomUtil.create('div', 'legenda');
+                        div.innerHTML = `
+                            <div><i style="background:#28a745;"></i> Vitória</div>
+                            <div><i style="background:#dc3545;"></i> Derrota</div>
+                            <div><i style="background:#ffc107;"></i> Empate</div>
+                            <div><i style="background:#6c757d;"></i> Futuro</div>
+                        `;
+                        return div;
+                    };
+                    legend.addTo(map);
+                }
+                
+            } catch (error) {
                 console.error('Erro ao carregar jogos:', error);
-                alert('Não foi possível carregar os dados dos jogos.');
-            });
+                alert('Erro ao carregar os dados dos jogos. Verifique se o arquivo jogos.json existe.');
+            } finally {
+                // Esconder indicador de carregamento
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        // Carregar jogos automaticamente ao abrir a página
+        carregarJogos();
     </script>
 </body>
 </html>
