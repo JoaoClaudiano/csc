@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mapa de Jogos - Ceará SC 2026</title>
+    <link rel="stylesheet" href="https://unpkg.com" />
+    <style>
+        body { margin: 0; padding: 0; font-family: sans-serif; }
+        #map { height: 100vh; width: 100%; }
+        .popup-vovo { text-align: center; }
+        .popup-vovo b { font-size: 1.2em; }
+    </style>
+</head>
+<body>
+
+    <div id="map"></div>
+
+    <script src="https://unpkg.com"></script>
+    <script>
+        // Inicializa o mapa focado no Ceará
+        const map = L.map('map').setView([-3.806, -38.526], 5);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Dados dos Jogos (Exemplos de 2026)
+        const jogos = [
+            {
+                adversario: "Ferroviário",
+                local: "Arena Castelão",
+                coords: [-3.806, -38.526],
+                data: "12/02/2026",
+                resultado: "Ceará 5 x 1 Ferroviário",
+                status: "concluido"
+            },
+            {
+                adversario: "Floresta",
+                local: "Arena Castelão",
+                coords: [-3.807, -38.527],
+                data: "22/02/2026",
+                resultado: "A definir",
+                status: "futuro"
+            },
+            {
+                adversario: "Ponte Preta",
+                local: "Estádio Moisés Lucarelli",
+                coords: [-22.912, -47.050],
+                data: "31/03/2026",
+                resultado: "A definir",
+                status: "futuro"
+            }
+        ];
+
+        // Estilização dos ícones
+        const iconPreto = new L.Icon({
+            iconUrl: 'https://raw.githubusercontent.com',
+            shadowUrl: 'https://cdnjs.cloudflare.com',
+            iconSize: [25, 41], iconAnchor: [12, 41]
+        });
+
+        const iconCinza = new L.Icon({
+            iconUrl: 'https://raw.githubusercontent.com',
+            shadowUrl: 'https://cdnjs.cloudflare.com',
+            iconSize: [25, 41], iconAnchor: [12, 41]
+        });
+
+        // Adicionar marcadores ao mapa
+        jogos.forEach(jogo => {
+            const icon = jogo.status === 'concluido' ? iconCinza : iconPreto;
+            L.marker(jogo.coords, { icon: icon })
+                .addTo(map)
+                .bindPopup(`
+                    <div class="popup-vovo">
+                        <b>Ceará x ${jogo.adversario}</b><br>
+                        <p>📅 ${jogo.data}</p>
+                        <p>📍 ${jogo.local}</p>
+                        <p><strong>Placar: ${jogo.resultado}</strong></p>
+                    </div>
+                `);
+        });
+    </script>
+</body>
+</html>
