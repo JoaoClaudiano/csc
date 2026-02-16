@@ -62,7 +62,6 @@ body {
     transform: scale(0.98);
 }
 
-/* Indicador de carregamento */
 .loading {
     position: absolute;
     top: 50%;
