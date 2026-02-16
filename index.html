@@ -8,8 +8,10 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <!-- Font Awesome (para ícones) -->
+    <!-- Font Awesome (ícones minimalistas) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Favicon (escudo do Ceará) -->
+    <link rel="icon" type="image/svg+xml" href="https://upload.wikimedia.org/wikipedia/pt/6/6a/Cear%C3%A1_Sporting_Club_logo.svg" />
     <style>
         /* ========== ESTILOS GLOBAIS ========== */
         * {
@@ -22,8 +24,7 @@
             font-family: 'Segoe UI', Roboto, Arial, sans-serif;
             display: flex;
             flex-direction: column;
-            height: 100vh;
-            overflow: hidden;
+            min-height: 100vh;
             background: #f5f5f5;
         }
 
@@ -44,9 +45,13 @@
             font-size: 1.4rem;
             font-weight: 400;
             letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
-        header h1 strong {
-            font-weight: 600;
+        header h1 i {
+            font-size: 1.8rem;
+            color: white;
         }
         .header-buttons {
             display: flex;
@@ -92,6 +97,9 @@
             border-bottom: 2px solid #003366;
             padding-bottom: 6px;
             font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
         .stats-grid {
             display: grid;
@@ -109,6 +117,10 @@
             color: #666;
             font-size: 0.7rem;
             text-transform: uppercase;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
         }
         .stats-item .value {
             font-weight: 700;
@@ -153,6 +165,9 @@
             color: #003366;
             font-size: 1.2rem;
             margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
         .filtros {
             display: flex;
@@ -168,11 +183,21 @@
             cursor: pointer;
             transition: all 0.2s;
             color: #333;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .filtros button i {
+            font-size: 0.9rem;
+            color: #003366;
         }
         .filtros button.ativo {
             background: #003366;
             color: white;
             border-color: #003366;
+        }
+        .filtros button.ativo i {
+            color: white;
         }
         .filtros button:hover {
             background: #e0e0e0;
@@ -211,6 +236,9 @@
             font-weight: 600;
             font-size: 1rem;
             color: #003366;
+            display: flex;
+            align-items: center;
+            gap: 5px;
         }
         .jogo-item .info {
             display: flex;
@@ -251,15 +279,16 @@
             cursor: pointer;
             box-shadow: 0 2px 5px rgba(0,0,0,0.2);
             transition: left 0.3s ease;
+            color: #003366;
         }
         .sidebar.collapsed + .map-wrapper .toggle-sidebar {
             left: 15px;
         }
 
-        /* Controles flutuantes (botão atualizar) */
+        /* Botão atualizar (reposicionado para não sobrepor legenda) */
         #controles {
             position: absolute;
-            bottom: 30px;
+            bottom: 80px;   /* acima do footer */
             right: 20px;
             z-index: 2000;
             background: white;
@@ -289,6 +318,25 @@
             background: #004c99;
         }
 
+        /* Footer */
+        footer {
+            background: #f4f4f4;
+            color: #333;
+            text-align: center;
+            padding: 8px;
+            font-size: 0.8rem;
+            border-top: 1px solid #ddd;
+            z-index: 10;
+            flex-shrink: 0;
+        }
+        footer a {
+            color: #003366;
+            text-decoration: none;
+        }
+        footer a:hover {
+            text-decoration: underline;
+        }
+
         /* Loading */
         .loading {
             position: absolute;
@@ -315,7 +363,7 @@
         }
         @keyframes dots { 0%,20%{content:"";} 40%{content:".";} 60%{content:"..";} 80%,100%{content:"...";} }
 
-        /* Legenda */
+        /* Legenda (reposicionada para não conflitar) */
         .legenda {
             background: white;
             padding: 10px 14px;
@@ -345,20 +393,22 @@
             .sidebar { width: 280px; }
             .toggle-sidebar { left: 295px; }
             .campanha-dropdown { width: 280px; right: 10px; }
+            #controles { bottom: 70px; }
         }
         @media (max-width: 600px) {
             .sidebar { position: absolute; height: 100%; z-index: 2500; }
             .toggle-sidebar { left: 295px; }
-            #controles { bottom: 20px; right: 10px; padding: 6px 12px; }
             .header-btn span { display: none; } /* esconde texto em mobile, só ícone */
             .header-btn i { margin: 0; }
+            #controles { bottom: 60px; right: 10px; padding: 6px 12px; }
+            footer { font-size: 0.7rem; }
         }
     </style>
 </head>
 <body>
 
 <header>
-    <h1>⚽ <strong>Ceará SC</strong> | Série B 2026</h1>
+    <h1><i class="fas fa-futbol"></i> <strong>Ceará SC</strong> | Série B 2026</h1>
     <div class="header-buttons">
         <button class="header-btn" id="campanhaBtn"><i class="fas fa-chart-line"></i> <span>Campanha</span></button>
         <button class="header-btn" id="shareButton"><i class="fas fa-share-alt"></i> <span>Compartilhar</span></button>
@@ -367,14 +417,14 @@
 
 <!-- Dropdown da campanha -->
 <div class="campanha-dropdown" id="campanhaDropdown">
-    <h4>📊 Campanha do Vovô</h4>
+    <h4><i class="fas fa-chart-simple"></i> Campanha do Vovô</h4>
     <div class="stats-grid">
-        <div class="stats-item"><span class="label">Pontos</span><span class="value" id="statsPontos">0</span></div>
-        <div class="stats-item"><span class="label">Aproveit.</span><span class="value" id="statsAproveitamento">0%</span></div>
-        <div class="stats-item"><span class="label">Gols pró</span><span class="value" id="statsGolsPro">0</span></div>
-        <div class="stats-item"><span class="label">Gols contra</span><span class="value" id="statsGolsContra">0</span></div>
-        <div class="stats-item"><span class="label">Maior vit.</span><span class="value" id="statsMaiorVitoria">-</span></div>
-        <div class="stats-item"><span class="label">Sequência</span><span class="value" id="statsSequencia">-</span></div>
+        <div class="stats-item"><span class="label"><i class="fas fa-star"></i> Pontos</span><span class="value" id="statsPontos">0</span></div>
+        <div class="stats-item"><span class="label"><i class="fas fa-percent"></i> Aproveit.</span><span class="value" id="statsAproveitamento">0%</span></div>
+        <div class="stats-item"><span class="label"><i class="fas fa-futbol"></i> Gols pró</span><span class="value" id="statsGolsPro">0</span></div>
+        <div class="stats-item"><span class="label"><i class="fas fa-shield"></i> Gols contra</span><span class="value" id="statsGolsContra">0</span></div>
+        <div class="stats-item"><span class="label"><i class="fas fa-trophy"></i> Maior vit.</span><span class="value" id="statsMaiorVitoria">-</span></div>
+        <div class="stats-item"><span class="label"><i class="fas fa-chart-line"></i> Sequência</span><span class="value" id="statsSequencia">-</span></div>
     </div>
     <div class="chart-container">
         <canvas id="evolucaoChart"></canvas>
@@ -385,16 +435,16 @@
     <!-- Sidebar com lista de jogos -->
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
-            <h3>📋 Jogos (38 rodadas)</h3>
+            <h3><i class="fas fa-list"></i> Jogos (38 rodadas)</h3>
             <div class="filtros" id="filtros">
-                <button data-filtro="todos" class="ativo">Todos</button>
-                <button data-filtro="mandante">Em casa</button>
-                <button data-filtro="visitante">Fora</button>
-                <button data-filtro="futuro">Futuros</button>
-                <button data-filtro="realizado">Realizados</button>
-                <button data-filtro="vitoria">Vitórias</button>
-                <button data-filtro="derrota">Derrotas</button>
-                <button data-filtro="empate">Empates</button>
+                <button data-filtro="todos" class="ativo"><i class="fas fa-globe"></i> Todos</button>
+                <button data-filtro="mandante"><i class="fas fa-home"></i> Em casa</button>
+                <button data-filtro="visitante"><i class="fas fa-plane"></i> Fora</button>
+                <button data-filtro="futuro"><i class="fas fa-clock"></i> Futuros</button>
+                <button data-filtro="realizado"><i class="fas fa-check"></i> Realizados</button>
+                <button data-filtro="vitoria"><i class="fas fa-smile"></i> Vitórias</button>
+                <button data-filtro="derrota"><i class="fas fa-frown"></i> Derrotas</button>
+                <button data-filtro="empate"><i class="fas fa-meh"></i> Empates</button>
             </div>
         </div>
         <div class="jogos-list" id="jogosList"></div>
@@ -410,13 +460,18 @@
         <!-- Botão atualizar (com debounce) -->
         <div id="controles">
             <button onclick="debouncedCarregarJogos()"><i class="fas fa-sync-alt"></i> Atualizar</button>
-            <span style="color:#003366; font-size:0.9rem;">38 jogos</span>
+            <span style="color:#003366; font-size:0.9rem;"><i class="fas fa-calendar"></i> 38 jogos</span>
         </div>
 
         <!-- Loading -->
         <div class="loading" id="loading">Carregando jogos</div>
     </div>
 </div>
+
+<!-- Footer -->
+<footer>
+    <p><i class="fas fa-map-marked-alt"></i> Dados baseados na tabela da CBF. Atualizado em tempo real. <a href="#">Sobre</a></p>
+</footer>
 
 <!-- Inclusão dos scripts -->
 <script src="estadios.js"></script>
@@ -435,7 +490,7 @@
     let todosJogos = [];
     let jogosFiltrados = [];
     let chartInstance = null;
-    let graficoInicializado = false; // para criar gráfico só quando necessário
+    let graficoInicializado = false;
 
     // Elementos DOM
     const loadingEl = document.getElementById('loading');
@@ -539,9 +594,9 @@
         jogosFiltrados = [...todosJogos];
         atualizarMapa();
         atualizarLista();
-        atualizarEstatisticas(); // atualiza números
+        atualizarEstatisticas();
         if (campanhaDropdown.classList.contains('show')) {
-            atualizarGrafico();   // só atualiza gráfico se dropdown estiver aberto
+            atualizarGrafico();
         }
     }
 
@@ -565,9 +620,9 @@
             const popupContent = `
                 <div style="font-family: 'Segoe UI', sans-serif;">
                     <h3 style="margin:0 0 8px 0; color:#003366;">⚽ Ceará x ${jogo.adversario}</h3>
-                    <p><strong>📅 Data:</strong> ${jogo.data} ${jogo.horario ? 'às ' + jogo.horario : ''}</p>
-                    <p><strong>🏟️ Estádio:</strong> ${jogo.estadio}</p>
-                    <p><strong>📺 Transmissão:</strong> ${jogo.transmissao || 'A definir'}</p>
+                    <p><i class="fas fa-calendar"></i> <strong>Data:</strong> ${jogo.data} ${jogo.horario ? 'às ' + jogo.horario : ''}</p>
+                    <p><i class="fas fa-map-marker-alt"></i> <strong>Estádio:</strong> ${jogo.estadio}</p>
+                    <p><i class="fas fa-tv"></i> <strong>Transmissão:</strong> ${jogo.transmissao || 'A definir'}</p>
                     <p style="font-size:1.2em; font-weight:bold; color:${cor};">${jogo.resultado}</p>
                 </div>
             `;
@@ -612,24 +667,17 @@
             const item = document.createElement('div');
             item.className = `jogo-item ${status}`;
             item.innerHTML = `
-                <div class="adversario">🆚 ${jogo.adversario}</div>
+                <div class="adversario"><i class="fas fa-shield-alt"></i> ${jogo.adversario}</div>
                 <div class="info">
-                    <span>📅 ${jogo.data} ${jogo.horario || ''}</span>
-                    <span>🏟️ ${jogo.estadio}</span>
+                    <span><i class="fas fa-calendar"></i> ${jogo.data} ${jogo.horario || ''}</span>
+                    <span><i class="fas fa-map-marker-alt"></i> ${jogo.estadio}</span>
                 </div>
                 <div class="resultado">${jogo.resultado}</div>
             `;
-            // Ao clicar no item, centraliza no marcador correspondente (vamos fazer uma busca simples)
             item.addEventListener('click', () => {
                 const coords = estadios[jogo.estadio];
                 if (coords) {
                     map.setView(coords, 13);
-                    // Encontra o marcador pelo adversário e data (aproximação)
-                    const marcador = marcadoresAtuais.find((m, idx) => {
-                        // Não há referência direta, então vamos usar um truque: associar via popup content? 
-                        // Para simplificar, vamos apenas centralizar e abrir popup do primeiro marcador com mesmo estádio? Não é preciso.
-                        // Deixamos apenas o mapa centralizar.
-                    });
                 }
             });
             jogosListEl.appendChild(item);
@@ -671,7 +719,7 @@
     }
 
     // =======================================================
-    // ESTATÍSTICAS (ATUALIZA NÚMEROS)
+    // ESTATÍSTICAS
     // =======================================================
     function atualizarEstatisticas() {
         const realizados = todosJogos.filter(j => j.resultado !== 'A definir');
@@ -774,12 +822,10 @@
         if (campanhaDropdown.classList.contains('show') && !graficoInicializado) {
             atualizarGrafico();
         } else if (campanhaDropdown.classList.contains('show')) {
-            // Se já foi inicializado, apenas redesenha (opcional)
             atualizarGrafico();
         }
     });
 
-    // Fechar dropdown ao clicar fora (opcional)
     document.addEventListener('click', (e) => {
         if (!campanhaBtn.contains(e.target) && !campanhaDropdown.contains(e.target)) {
             campanhaDropdown.classList.remove('show');
