@@ -1,0 +1,177 @@
+/* styles.css */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    overflow: hidden;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+#map {
+    height: 100vh;
+    width: 100%;
+    z-index: 1;
+}
+
+/* Controles flutuantes */
+#controles {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    z-index: 1000;
+    background: white;
+    padding: 12px 18px;
+    border-radius: 30px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    backdrop-filter: blur(5px);
+    border: 1px solid rgba(0, 51, 102, 0.1);
+}
+
+#controles button {
+    background: #003366;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 25px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 5px rgba(0, 51, 102, 0.3);
+}
+
+#controles button:hover {
+    background: #004c99;
+    transform: scale(1.05);
+    box-shadow: 0 4px 8px rgba(0, 51, 102, 0.4);
+}
+
+#controles button:active {
+    transform: scale(0.98);
+}
+
+/* Indicador de carregamento */
+.loading {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(255, 255, 255, 0.95);
+    padding: 20px 30px;
+    border-radius: 50px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    z-index: 2000;
+    display: none;
+    font-weight: 600;
+    color: #003366;
+    font-size: 18px;
+    border: 2px solid #003366;
+    backdrop-filter: blur(10px);
+}
+
+.loading::after {
+    content: "...";
+    animation: dots 1.5s steps(4, end) infinite;
+    width: 20px;
+    display: inline-block;
+    text-align: left;
+}
+
+@keyframes dots {
+    0%, 20% { content: ""; }
+    40% { content: "."; }
+    60% { content: ".."; }
+    80%, 100% { content: "..."; }
+}
+
+/* Legenda do mapa */
+.legenda {
+    background: white;
+    padding: 12px 16px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    line-height: 1.8;
+    font-size: 14px;
+    border: 1px solid #ddd;
+    backdrop-filter: blur(5px);
+}
+
+.legenda div {
+    display: flex;
+    align-items: center;
+    margin: 5px 0;
+}
+
+.legenda i {
+    display: inline-block;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    margin-right: 8px;
+    border: 2px solid white;
+    box-shadow: 0 0 3px rgba(0,0,0,0.3);
+}
+
+/* Estilização do popup (personalizado via JS, mas podemos reforçar) */
+.leaflet-popup-content {
+    min-width: 220px;
+    border-radius: 8px;
+}
+
+.leaflet-popup-content h3 {
+    margin: 0 0 8px 0;
+    color: #003366;
+    border-bottom: 2px solid #003366;
+    padding-bottom: 4px;
+    font-size: 16px;
+}
+
+.leaflet-popup-content p {
+    margin: 4px 0;
+    font-size: 13px;
+}
+
+.leaflet-popup-content strong {
+    color: #003366;
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+    #controles {
+        top: 10px;
+        right: 10px;
+        padding: 8px 12px;
+    }
+    
+    #controles button {
+        padding: 6px 12px;
+        font-size: 12px;
+    }
+    
+    .loading {
+        font-size: 14px;
+        padding: 12px 20px;
+    }
+    
+    .legenda {
+        font-size: 12px;
+        padding: 8px 12px;
+    }
+}
+
+/* Acessibilidade: foco visível */
+button:focus-visible {
+    outline: 3px solid #ffbf47;
+}
