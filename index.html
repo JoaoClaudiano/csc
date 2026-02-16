@@ -4,28 +4,47 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mapa de Jogos - Ceará SC 2026</title>
-    <link rel="stylesheet" href="https://unpkg.com" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
-        body { margin: 0; padding: 0; font-family: sans-serif; }
-        #map { height: 100vh; width: 100%; }
-        .popup-vovo { text-align: center; }
-        .popup-vovo b { font-size: 1.2em; }
+        body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
+        #map { height: 90vh; width: 100%; }
+        #header {
+            background: #003366;
+            color: white;
+            padding: 10px;
+            text-align: center;
+            font-size: 1.5em;
+        }
+        .legend {
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            line-height: 1.5;
+        }
+        .legend i {
+            width: 18px;
+            height: 18px;
+            float: left;
+            margin-right: 8px;
+            opacity: 0.8;
+        }
+        .legend .circle-preto { background: #333; border-radius: 50%; }
+        .legend .circle-cinza { background: #aaa; border-radius: 50%; }
     </style>
 </head>
 <body>
-
+    <div id="header">⚽ Jogos do Ceará SC em 2026</div>
     <div id="map"></div>
 
-    <script src="https://unpkg.com"></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // Inicializa o mapa focado no Ceará
-        const map = L.map('map').setView([-3.806, -38.526], 5);
+        const map = L.map('map');
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors'
         }).addTo(map);
 
-        // Dados dos Jogos (Exemplos de 2026)
         const jogos = [
             {
                 adversario: "Ferroviário",
@@ -38,7 +57,7 @@
             {
                 adversario: "Floresta",
                 local: "Arena Castelão",
-                coords: [-3.807, -38.527],
+                coords: [-3.806, -38.526],
                 data: "22/02/2026",
                 resultado: "A definir",
                 status: "futuro"
@@ -53,33 +72,41 @@
             }
         ];
 
-        // Estilização dos ícones
-        const iconPreto = new L.Icon({
-            iconUrl: 'https://raw.githubusercontent.com',
-            shadowUrl: 'https://cdnjs.cloudflare.com',
-            iconSize: [25, 41], iconAnchor: [12, 41]
-        });
+        // Criar ícones personalizados
+        const iconPreto = L.divIcon({ className: 'custom-icon preto', html: '⚫', iconSize: [20, 20] });
+        const iconCinza = L.divIcon({ className: 'custom-icon cinza', html: '⚪', iconSize: [20, 20] });
 
-        const iconCinza = new L.Icon({
-            iconUrl: 'https://raw.githubusercontent.com',
-            shadowUrl: 'https://cdnjs.cloudflare.com',
-            iconSize: [25, 41], iconAnchor: [12, 41]
-        });
+        const markers = [];
 
-        // Adicionar marcadores ao mapa
         jogos.forEach(jogo => {
             const icon = jogo.status === 'concluido' ? iconCinza : iconPreto;
-            L.marker(jogo.coords, { icon: icon })
-                .addTo(map)
-                .bindPopup(`
-                    <div class="popup-vovo">
-                        <b>Ceará x ${jogo.adversario}</b><br>
-                        <p>📅 ${jogo.data}</p>
-                        <p>📍 ${jogo.local}</p>
-                        <p><strong>Placar: ${jogo.resultado}</strong></p>
-                    </div>
-                `);
+            const marker = L.marker(jogo.coords, { icon }).addTo(map);
+            marker.bindPopup(`
+                <b>Ceará x ${jogo.adversario}</b><br>
+                📅 ${jogo.data}<br>
+                📍 ${jogo.local}<br>
+                <strong>${jogo.resultado}</strong>
+            `);
+            markers.push(marker);
         });
+
+        // Ajustar zoom para mostrar todos os marcadores
+        if (markers.length > 0) {
+            const group = L.featureGroup(markers);
+            map.fitBounds(group.getBounds().pad(0.2));
+        }
+
+        // Adicionar legenda
+        const legend = L.control({ position: 'bottomright' });
+        legend.onAdd = function(map) {
+            const div = L.DomUtil.create('div', 'legend');
+            div.innerHTML = `
+                <div><i class="circle-preto"></i> Jogo futuro</div>
+                <div><i class="circle-cinza"></i> Jogo realizado</div>
+            `;
+            return div;
+        };
+        legend.addTo(map);
     </script>
 </body>
 </html>
