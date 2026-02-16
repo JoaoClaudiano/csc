@@ -3,87 +3,58 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mapa de Jogos - Ceará SC 2026</title>
-    
-    <!-- Leaflet CSS -->
+    <title>Ceará SC na Série B 2026 - Mapa de Jogos</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    
-    <!-- Estilos personalizados -->
     <link rel="stylesheet" href="styles.css">
-    
-    <!-- Favicon (opcional) -->
     <link rel="icon" type="image/png" href="https://upload.wikimedia.org/wikipedia/pt/6/6a/Cear%C3%A1_Sporting_Club_logo.svg" />
 </head>
 <body>
-    <!-- Botões de controle -->
+
+    <header>
+        <h1>⚽ <strong>Ceará Sporting Club</strong> | Brasileirão Série B 2026</h1>
+    </header>
+
     <div id="controles">
-        <button onclick="carregarJogos()" id="btnAtualizar">
-            🔄 Atualizar Jogos
-        </button>
-        <span style="color:#003366; font-weight:500;">⚽ Ceará SC 2026</span>
+        <button onclick="carregarJogos()" id="btnAtualizar">🔄 Atualizar Jogos</button>
+        <span style="color:#003366; font-weight:500;">🗺️ 38 rodadas</span>
     </div>
 
-    <!-- Mapa -->
     <div id="map"></div>
 
-    <!-- Loading spinner -->
     <div class="loading" id="loading">Carregando jogos</div>
 
-    <!-- Scripts -->
-    <!-- Primeiro carregamos o banco de estádios -->
+    <footer>
+        <p>🗓️ Acompanhe a campanha do Vovô no mapa. Dados baseados na tabela básica da CBF [citation:1][citation:3].</p>
+    </footer>
+
     <script src="estadios.js"></script>
-    
-    <!-- Depois o Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     
-    <!-- Script principal da aplicação -->
     <script>
-        // ============================================
-        // CONFIGURAÇÃO INICIAL DO MAPA
-        // ============================================
-        const map = L.map('map').setView([-15.788, -47.879], 4); // Centro do Brasil
+        // Configuração inicial do mapa
+        const map = L.map('map').setView([-15.788, -47.879], 4);
         
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-            maxZoom: 19
+            attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         }).addTo(map);
 
-        // Variável global para armazenar marcadores atuais
         let marcadoresAtuais = [];
 
-        // ============================================
-        // FUNÇÕES AUXILIARES
-        // ============================================
-
-        /**
-         * Determina a cor do marcador baseado no resultado do jogo.
-         * @param {Object} jogo - Objeto contendo o campo 'resultado'
-         * @returns {string} Código da cor em hexadecimal
-         */
         function getCorResultado(jogo) {
-            // Se for jogo futuro
-            if (jogo.resultado === "A definir") return '#6c757d'; // cinza
+            if (jogo.resultado === "A definir") return '#6c757d';
             
-            // Formato esperado: "Ceará X x Y Adversário"
             const partes = jogo.resultado.split(' x ');
             if (partes.length !== 2) return '#6c757d';
             
-            // Extrai os gols (remove "Ceará " do primeiro)
             const golsCeara = parseInt(partes[0].replace('Ceará ', ''));
             const golsAdv = parseInt(partes[1]);
             
             if (isNaN(golsCeara) || isNaN(golsAdv)) return '#6c757d';
-            
-            if (golsCeara > golsAdv) return '#28a745'; // verde (vitória)
-            if (golsCeara < golsAdv) return '#dc3545'; // vermelho (derrota)
-            return '#ffc107'; // amarelo (empate)
+            if (golsCeara > golsAdv) return '#28a745';
+            if (golsCeara < golsAdv) return '#dc3545';
+            return '#ffc107';
         }
 
-        /**
-         * Cria um ícone personalizado (círculo colorido) para o marcador.
-         * @param {string} cor - Código da cor em hexadecimal
-         * @returns {L.DivIcon} Ícone do Leaflet
-         */
         function criarIcone(cor) {
             return L.divIcon({
                 html: `<div style="background-color: ${cor}; width: 24px; height: 24px; border-radius: 50%; border: 3px solid white; box-shadow: 0 3px 8px rgba(0,0,0,0.4);"></div>`,
@@ -93,43 +64,31 @@
             });
         }
 
-        /**
-         * Carrega os jogos do arquivo JSON e os exibe no mapa.
-         * É chamada ao abrir a página e ao clicar no botão de atualizar.
-         */
         async function carregarJogos() {
-            // Mostra o indicador de carregamento
             document.getElementById('loading').style.display = 'block';
-            
-            // Remove todos os marcadores antigos do mapa
             marcadoresAtuais.forEach(m => map.removeLayer(m));
             marcadoresAtuais = [];
             
             try {
-                // Faz o fetch do arquivo JSON (certifique-se de que o arquivo existe)
-                const response = await fetch('jogos.json');
+                // AGORA CARREGAMOS O ARQUIVO CORRETO: jogos-serieb.json
+                const response = await fetch('jogos-serieb.json');
                 if (!response.ok) {
-                    throw new Error(`Erro HTTP: ${response.status}`);
+                    throw new Error(`Erro HTTP: ${response.status}. Verifique se o arquivo 'jogos-serieb.json' existe.`);
                 }
                 const jogos = await response.json();
                 
-                // Array temporário para agrupar os marcadores e ajustar o zoom depois
                 const grupoMarcadores = [];
                 
-                // Itera sobre cada jogo
                 jogos.forEach(jogo => {
-                    // Verifica se o estádio existe no banco de dados
                     const coords = estadios[jogo.estadio];
                     if (!coords) {
                         console.warn(`Estádio não encontrado: "${jogo.estadio}" - jogo contra ${jogo.adversario} não será exibido.`);
-                        return; // pula este jogo
+                        return;
                     }
                     
-                    // Determina a cor do marcador
                     const cor = getCorResultado(jogo);
                     const icone = criarIcone(cor);
                     
-                    // Constrói o conteúdo do popup com todas as informações disponíveis
                     const popupContent = `
                         <div style="font-family: 'Segoe UI', sans-serif;">
                             <h3 style="margin:0 0 8px 0; color:#003366; border-bottom:2px solid #003366; padding-bottom:4px;">
@@ -137,7 +96,6 @@
                             </h3>
                             <p style="margin:4px 0;"><strong>📅 Data:</strong> ${jogo.data} ${jogo.horario ? 'às ' + jogo.horario : ''}</p>
                             <p style="margin:4px 0;"><strong>🏟️ Estádio:</strong> ${jogo.estadio}</p>
-                            <p style="margin:4px 0;"><strong>🏆 Competição:</strong> ${jogo.competicao || 'Não informada'}</p>
                             <p style="margin:4px 0;"><strong>📺 Transmissão:</strong> ${jogo.transmissao || 'A definir'}</p>
                             <p style="margin:8px 0 0 0; font-size:1.2em; font-weight:bold; color:${cor};">
                                 ${jogo.resultado}
@@ -145,7 +103,6 @@
                         </div>
                     `;
                     
-                    // Cria o marcador e adiciona ao mapa
                     const marcador = L.marker(coords, { icon: icone })
                         .bindPopup(popupContent, { maxWidth: 260 });
                     
@@ -154,16 +111,11 @@
                     grupoMarcadores.push(marcador);
                 });
                 
-                // Ajusta o zoom para que todos os marcadores fiquem visíveis
                 if (grupoMarcadores.length > 0) {
                     const group = L.featureGroup(grupoMarcadores);
-                    map.fitBounds(group.getBounds().pad(0.15)); // padding de 15%
+                    map.fitBounds(group.getBounds().pad(0.15));
                 }
                 
-                // ============================================
-                // ADICIONA LEGENDA (se ainda não existir)
-                // ============================================
-                // Verifica se a legenda já foi adicionada para não duplicar
                 if (!window.legendaAdicionada) {
                     const legend = L.control({ position: 'bottomright' });
                     legend.onAdd = function() {
@@ -177,21 +129,17 @@
                         return div;
                     };
                     legend.addTo(map);
-                    window.legendaAdicionada = true; // flag para não adicionar novamente
+                    window.legendaAdicionada = true;
                 }
                 
             } catch (error) {
                 console.error('Erro ao carregar jogos:', error);
-                alert('Não foi possível carregar os jogos. Verifique se o arquivo "jogos.json" existe e está acessível.');
+                alert('Não foi possível carregar os jogos. Verifique se o arquivo "jogos-serieb.json" existe e está acessível.');
             } finally {
-                // Esconde o loading
                 document.getElementById('loading').style.display = 'none';
             }
         }
 
-        // ============================================
-        // CARREGA OS JOGOS ASSIM QUE A PÁGINA ABRIR
-        // ============================================
         window.addEventListener('load', carregarJogos);
     </script>
 </body>
