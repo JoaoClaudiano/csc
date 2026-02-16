@@ -205,6 +205,22 @@
                 document.getElementById('loading').style.display = 'none';
             }
         }
+        // Adicione esta função após carregarJogos()
+        function iniciarAtualizacaoAutomatica(intervaloMinutos = 5) {
+            // Converte minutos para milissegundos
+            const intervalo = intervaloMinutos * 60 * 1000;
+            
+            // Executa a cada X minutos
+            setInterval(() => {
+                console.log('Verificando atualizações...');
+                carregarJogos();
+            }, intervalo);
+        }
+
+        // Chame após o carregamento inicial
+        carregarJogos().then(() => {
+            iniciarAtualizacaoAutomatica(5); // Atualiza a cada 5 minutos
+        });
 
         // Carregar jogos automaticamente ao abrir a página
         carregarJogos();
