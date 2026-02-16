@@ -82,7 +82,45 @@ footer {
     transition: all 0.2s ease;
     box-shadow: 0 2px 5px rgba(0, 51, 102, 0.3);
 }
-
+/* Acordeão */
+.acordeao {
+    margin-top: 10px;
+}
+.acordeao-header {
+    background: #e9ecef;
+    padding: 10px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 600;
+    color: #003366;
+    border: 1px solid #ccc;
+}
+.acordeao-header i {
+    transition: transform 0.3s;
+}
+.acordeao-header.ativo i {
+    transform: rotate(180deg);
+}
+.acordeao-content {
+    display: none;
+    padding: 5px 0;
+}
+.acordeao-content.visivel {
+    display: block;
+}
+.proximos-jogos {
+    margin-bottom: 15px;
+}
+.proximos-jogos h4, .anteriores h4 {
+    color: #003366;
+    margin: 10px 0 5px 0;
+    font-size: 1rem;
+    border-left: 3px solid #003366;
+    padding-left: 8px;
+}
 #controles button:hover {
     background: #004c99;
     transform: scale(1.05);
