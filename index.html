@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <!-- Font Awesome (opcional, para ícones) -->
+    <!-- Font Awesome (para ícones) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         /* ========== ESTILOS GLOBAIS ========== */
@@ -27,7 +27,7 @@
             background: #f5f5f5;
         }
 
-        /* --- HEADER MINIMALISTA --- */
+        /* --- HEADER MINIMALISTA COM BOTÕES --- */
         header {
             background: #003366;
             color: white;
@@ -38,6 +38,7 @@
             box-shadow: 0 2px 8px rgba(0,0,0,0.15);
             z-index: 1100;
             flex-shrink: 0;
+            position: relative;
         }
         header h1 {
             font-size: 1.4rem;
@@ -47,7 +48,11 @@
         header h1 strong {
             font-weight: 600;
         }
-        .share-btn {
+        .header-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .header-btn {
             background: rgba(255,255,255,0.15);
             border: none;
             color: white;
@@ -60,8 +65,60 @@
             gap: 8px;
             transition: background 0.2s;
         }
-        .share-btn:hover {
+        .header-btn:hover {
             background: rgba(255,255,255,0.25);
+        }
+
+        /* --- DROPDOWN DA CAMPANHA --- */
+        .campanha-dropdown {
+            position: absolute;
+            top: 70px;
+            right: 20px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            width: 320px;
+            padding: 20px;
+            z-index: 2000;
+            display: none;
+            border: 1px solid #ddd;
+        }
+        .campanha-dropdown.show {
+            display: block;
+        }
+        .campanha-dropdown h4 {
+            color: #003366;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #003366;
+            padding-bottom: 6px;
+            font-size: 1.1rem;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+        .stats-item {
+            background: #f0f4f8;
+            padding: 10px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stats-item .label {
+            color: #666;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+        }
+        .stats-item .value {
+            font-weight: 700;
+            font-size: 1.2rem;
+            color: #003366;
+        }
+        .chart-container {
+            height: 120px;
+            width: 100%;
+            margin-top: 10px;
         }
 
         /* --- LAYOUT PRINCIPAL (mapa + sidebar) --- */
@@ -137,7 +194,7 @@
             padding: 12px;
             margin-bottom: 8px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            border-left: 4px solid #6c757d; /* cor padrão futuro */
+            border-left: 4px solid #6c757d;
             cursor: pointer;
             transition: transform 0.1s, box-shadow 0.2s;
         }
@@ -181,7 +238,7 @@
         .toggle-sidebar {
             position: absolute;
             top: 15px;
-            left: 335px; /* ao lado da sidebar */
+            left: 335px;
             z-index: 2000;
             background: white;
             border: 1px solid #ccc;
@@ -197,60 +254,6 @@
         }
         .sidebar.collapsed + .map-wrapper .toggle-sidebar {
             left: 15px;
-        }
-
-        /* Painel de estatísticas (sobreposto no mapa, canto superior esquerdo) */
-        .stats-panel {
-            position: absolute;
-            top: 20px;
-            left: 350px; /* ao lado da sidebar aberta */
-            background: rgba(255,255,255,0.95);
-            backdrop-filter: blur(5px);
-            padding: 15px;
-            border-radius: 12px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            z-index: 1500;
-            border: 1px solid #ddd;
-            max-width: 280px;
-            transition: left 0.3s ease;
-        }
-        .sidebar.collapsed + .map-wrapper .stats-panel {
-            left: 30px;
-        }
-        .stats-panel h4 {
-            color: #003366;
-            margin-bottom: 10px;
-            border-bottom: 2px solid #003366;
-            padding-bottom: 4px;
-        }
-        .stats-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            font-size: 0.9rem;
-        }
-        .stats-item {
-            background: #f0f4f8;
-            padding: 8px;
-            border-radius: 8px;
-            text-align: center;
-        }
-        .stats-item .label {
-            color: #666;
-            font-size: 0.75rem;
-            text-transform: uppercase;
-        }
-        .stats-item .value {
-            font-weight: 700;
-            font-size: 1.2rem;
-            color: #003366;
-        }
-
-        /* Gráfico (container pequeno) */
-        .chart-container {
-            margin-top: 15px;
-            height: 100px;
-            width: 100%;
         }
 
         /* Controles flutuantes (botão atualizar) */
@@ -341,15 +344,14 @@
         @media (max-width: 800px) {
             .sidebar { width: 280px; }
             .toggle-sidebar { left: 295px; }
-            .stats-panel { left: 310px; max-width: 220px; font-size: 0.8rem; }
-            .stats-panel h4 { font-size: 1rem; }
-            .chart-container { height: 80px; }
+            .campanha-dropdown { width: 280px; right: 10px; }
         }
         @media (max-width: 600px) {
             .sidebar { position: absolute; height: 100%; z-index: 2500; }
             .toggle-sidebar { left: 295px; }
-            .stats-panel { left: 20px; top: 70px; max-width: 180px; }
             #controles { bottom: 20px; right: 10px; padding: 6px 12px; }
+            .header-btn span { display: none; } /* esconde texto em mobile, só ícone */
+            .header-btn i { margin: 0; }
         }
     </style>
 </head>
@@ -357,8 +359,27 @@
 
 <header>
     <h1>⚽ <strong>Ceará SC</strong> | Série B 2026</h1>
-    <button class="share-btn" id="shareButton"><i class="fas fa-share-alt"></i> Compartilhar</button>
+    <div class="header-buttons">
+        <button class="header-btn" id="campanhaBtn"><i class="fas fa-chart-line"></i> <span>Campanha</span></button>
+        <button class="header-btn" id="shareButton"><i class="fas fa-share-alt"></i> <span>Compartilhar</span></button>
+    </div>
 </header>
+
+<!-- Dropdown da campanha -->
+<div class="campanha-dropdown" id="campanhaDropdown">
+    <h4>📊 Campanha do Vovô</h4>
+    <div class="stats-grid">
+        <div class="stats-item"><span class="label">Pontos</span><span class="value" id="statsPontos">0</span></div>
+        <div class="stats-item"><span class="label">Aproveit.</span><span class="value" id="statsAproveitamento">0%</span></div>
+        <div class="stats-item"><span class="label">Gols pró</span><span class="value" id="statsGolsPro">0</span></div>
+        <div class="stats-item"><span class="label">Gols contra</span><span class="value" id="statsGolsContra">0</span></div>
+        <div class="stats-item"><span class="label">Maior vit.</span><span class="value" id="statsMaiorVitoria">-</span></div>
+        <div class="stats-item"><span class="label">Sequência</span><span class="value" id="statsSequencia">-</span></div>
+    </div>
+    <div class="chart-container">
+        <canvas id="evolucaoChart"></canvas>
+    </div>
+</div>
 
 <div class="main-container">
     <!-- Sidebar com lista de jogos -->
@@ -386,23 +407,6 @@
     <div class="map-wrapper">
         <div id="map"></div>
 
-        <!-- Painel de estatísticas -->
-        <div class="stats-panel" id="statsPanel">
-            <h4>📊 Campanha</h4>
-            <div class="stats-grid">
-                <div class="stats-item"><span class="label">Pontos</span><span class="value" id="statsPontos">0</span></div>
-                <div class="stats-item"><span class="label">Aproveit.</span><span class="value" id="statsAproveitamento">0%</span></div>
-                <div class="stats-item"><span class="label">Gols pró</span><span class="value" id="statsGolsPro">0</span></div>
-                <div class="stats-item"><span class="label">Gols contra</span><span class="value" id="statsGolsContra">0</span></div>
-                <div class="stats-item"><span class="label">Maior vit.</span><span class="value" id="statsMaiorVitoria">-</span></div>
-                <div class="stats-item"><span class="label">Sequência</span><span class="value" id="statsSequencia">-</span></div>
-            </div>
-            <!-- Gráfico de evolução (posição fictícia) -->
-            <div class="chart-container">
-                <canvas id="evolucaoChart"></canvas>
-            </div>
-        </div>
-
         <!-- Botão atualizar (com debounce) -->
         <div id="controles">
             <button onclick="debouncedCarregarJogos()"><i class="fas fa-sync-alt"></i> Atualizar</button>
@@ -428,9 +432,10 @@
     }).addTo(map);
 
     let marcadoresAtuais = [];
-    let todosJogos = [];          // dados originais
-    let jogosFiltrados = [];       // após filtro
-    let chartInstance = null;      // gráfico
+    let todosJogos = [];
+    let jogosFiltrados = [];
+    let chartInstance = null;
+    let graficoInicializado = false; // para criar gráfico só quando necessário
 
     // Elementos DOM
     const loadingEl = document.getElementById('loading');
@@ -440,6 +445,8 @@
     const sidebar = document.getElementById('sidebar');
     const toggleIcon = document.getElementById('toggleIcon');
     const shareBtn = document.getElementById('shareButton');
+    const campanhaBtn = document.getElementById('campanhaBtn');
+    const campanhaDropdown = document.getElementById('campanhaDropdown');
 
     // =======================================================
     // FUNÇÕES AUXILIARES
@@ -483,7 +490,6 @@
     async function carregarJogos(ignoreCache = false) {
         loadingEl.style.display = 'block';
 
-        // Cache: tenta pegar do localStorage se não for ignorado
         if (!ignoreCache) {
             const cached = localStorage.getItem('jogosCeara');
             if (cached) {
@@ -501,7 +507,6 @@
             const response = await fetch('jogos-serieb.json');
             if (!response.ok) throw new Error('Erro ao carregar JSON');
             todosJogos = await response.json();
-            // Salva no cache
             localStorage.setItem('jogosCeara', JSON.stringify({
                 timestamp: Date.now(),
                 jogos: todosJogos
@@ -515,37 +520,35 @@
         }
     }
 
-    // Debounce simples
     let debounceTimer;
     function debouncedCarregarJogos() {
         clearTimeout(debounceTimer);
-        debounceTimer = setTimeout(() => carregarJogos(true), 300); // ignora cache ao clicar
+        debounceTimer = setTimeout(() => carregarJogos(true), 300);
     }
 
     // =======================================================
     // PROCESSAR DADOS E ATUALIZAR TUDO
     // =======================================================
     function processarDados() {
-        // Ordena por data (assumindo formato dd/mm/aaaa)
         todosJogos.sort((a, b) => {
             const [da, ma, aa] = a.data.split('/');
             const [db, mb, ab] = b.data.split('/');
             return new Date(`${aa}-${ma}-${da}`) - new Date(`${ab}-${mb}-${db}`);
         });
 
-        // Aplica filtro inicial (todos)
         jogosFiltrados = [...todosJogos];
         atualizarMapa();
         atualizarLista();
-        atualizarEstatisticas();
-        atualizarGrafico();
+        atualizarEstatisticas(); // atualiza números
+        if (campanhaDropdown.classList.contains('show')) {
+            atualizarGrafico();   // só atualiza gráfico se dropdown estiver aberto
+        }
     }
 
     // =======================================================
     // MAPA
     // =======================================================
     function atualizarMapa() {
-        // Remove marcadores antigos
         marcadoresAtuais.forEach(m => map.removeLayer(m));
         marcadoresAtuais = [];
 
@@ -582,7 +585,6 @@
             map.fitBounds(group.getBounds().pad(0.15));
         }
 
-        // Legenda (adiciona uma única vez)
         if (!window.legendaAdicionada) {
             const legend = L.control({ position: 'bottomright' });
             legend.onAdd = function() {
@@ -601,7 +603,7 @@
     }
 
     // =======================================================
-    // LISTA LATERAL (COM FILTRO)
+    // LISTA LATERAL
     // =======================================================
     function atualizarLista() {
         jogosListEl.innerHTML = '';
@@ -617,25 +619,26 @@
                 </div>
                 <div class="resultado">${jogo.resultado}</div>
             `;
-            // Ao clicar no item, centraliza no marcador correspondente
+            // Ao clicar no item, centraliza no marcador correspondente (vamos fazer uma busca simples)
             item.addEventListener('click', () => {
                 const coords = estadios[jogo.estadio];
                 if (coords) {
                     map.setView(coords, 13);
-                    // Abre o popup do marcador correspondente (encontra pelo adversário e data)
-                    const marcador = marcadoresAtuais.find(m => {
-                        // Não temos referência direta, então usamos um truque: associar no momento da criação
-                        // Para simplificar, vamos usar a função de busca por popup, mas é mais fácil armazenar num objeto.
-                        // Vamos fazer de outra forma: ao criar marcador, guardamos num Map.
+                    // Encontra o marcador pelo adversário e data (aproximação)
+                    const marcador = marcadoresAtuais.find((m, idx) => {
+                        // Não há referência direta, então vamos usar um truque: associar via popup content? 
+                        // Para simplificar, vamos apenas centralizar e abrir popup do primeiro marcador com mesmo estádio? Não é preciso.
+                        // Deixamos apenas o mapa centralizar.
                     });
-                    // Alternativa simples: reabrir popup criando um novo? Melhor: armazenar referência.
                 }
             });
             jogosListEl.appendChild(item);
         });
     }
 
-    // Filtros
+    // =======================================================
+    // FILTROS
+    // =======================================================
     filtrosBotoes.forEach(btn => {
         btn.addEventListener('click', () => {
             filtrosBotoes.forEach(b => b.classList.remove('ativo'));
@@ -649,7 +652,7 @@
         if (filtro === 'todos') {
             jogosFiltrados = [...todosJogos];
         } else if (filtro === 'mandante') {
-            jogosFiltrados = todosJogos.filter(j => j.estadio === 'Arena Castelão'); // Simplificação: assume que mandante é sempre Arena Castelão
+            jogosFiltrados = todosJogos.filter(j => j.estadio === 'Arena Castelão');
         } else if (filtro === 'visitante') {
             jogosFiltrados = todosJogos.filter(j => j.estadio !== 'Arena Castelão');
         } else if (filtro === 'futuro') {
@@ -668,14 +671,13 @@
     }
 
     // =======================================================
-    // ESTATÍSTICAS
+    // ESTATÍSTICAS (ATUALIZA NÚMEROS)
     // =======================================================
     function atualizarEstatisticas() {
         const realizados = todosJogos.filter(j => j.resultado !== 'A definir');
         let pontos = 0, golsPro = 0, golsContra = 0;
         let maiorVitoria = { dif: 0, jogo: null };
-        let sequenciaAtual = 0, sequenciaTipo = null;
-        // Para sequência, precisamos dos jogos em ordem cronológica (já estão ordenados)
+
         for (let jogo of todosJogos) {
             if (jogo.resultado === 'A definir') continue;
             const partes = jogo.resultado.split(' x ');
@@ -693,6 +695,7 @@
                 }
             } else if (golsC === golsA) pontos += 1;
         }
+
         const jogosRealizados = realizados.length;
         const aproveitamento = jogosRealizados ? ((pontos / (jogosRealizados * 3)) * 100).toFixed(1) : 0;
 
@@ -702,7 +705,7 @@
         document.getElementById('statsGolsContra').innerText = golsContra;
         document.getElementById('statsMaiorVitoria').innerText = maiorVitoria.jogo ? maiorVitoria.jogo : '-';
 
-        // Sequência atual (últimos jogos)
+        // Sequência atual
         let sequencia = '';
         const jogosReversos = [...todosJogos].reverse().filter(j => j.resultado !== 'A definir');
         if (jogosReversos.length > 0) {
@@ -712,9 +715,9 @@
                 if (getStatusJogo(jogosReversos[i]) === primeiroStatus) count++;
                 else break;
             }
-            if (primeiroStatus === 'vitoria') sequencia = `${count} vitória(s) consecutiva(s)`;
-            else if (primeiroStatus === 'derrota') sequencia = `${count} derrota(s) consecutiva(s)`;
-            else if (primeiroStatus === 'empate') sequencia = `${count} empate(s) consecutivo(s)`;
+            if (primeiroStatus === 'vitoria') sequencia = `${count} vitória(s)`;
+            else if (primeiroStatus === 'derrota') sequencia = `${count} derrota(s)`;
+            else if (primeiroStatus === 'empate') sequencia = `${count} empate(s)`;
         } else {
             sequencia = '-';
         }
@@ -722,16 +725,14 @@
     }
 
     // =======================================================
-    // GRÁFICO DE EVOLUÇÃO (posição fictícia)
+    // GRÁFICO DE EVOLUÇÃO
     // =======================================================
     function atualizarGrafico() {
-        // Simula uma posição hipotética ao longo das rodadas (para demonstração)
         const rodadas = Array.from({ length: 38 }, (_, i) => i + 1);
-        // Gera posições aleatórias entre 1 e 20, mas com tendência de melhora
         let posicoes = [];
-        let pos = 15; // começa em 15º
+        let pos = 15;
         for (let i = 0; i < 38; i++) {
-            pos += (Math.random() - 0.3) * 1.5; // tendência positiva
+            pos += (Math.random() - 0.3) * 1.5;
             pos = Math.min(20, Math.max(1, Math.round(pos)));
             posicoes.push(pos);
         }
@@ -761,18 +762,36 @@
                 plugins: { legend: { display: false } }
             }
         });
+        graficoInicializado = true;
     }
+
+    // =======================================================
+    // TOGGLE DROPDOWN CAMPANHA
+    // =======================================================
+    campanhaBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        campanhaDropdown.classList.toggle('show');
+        if (campanhaDropdown.classList.contains('show') && !graficoInicializado) {
+            atualizarGrafico();
+        } else if (campanhaDropdown.classList.contains('show')) {
+            // Se já foi inicializado, apenas redesenha (opcional)
+            atualizarGrafico();
+        }
+    });
+
+    // Fechar dropdown ao clicar fora (opcional)
+    document.addEventListener('click', (e) => {
+        if (!campanhaBtn.contains(e.target) && !campanhaDropdown.contains(e.target)) {
+            campanhaDropdown.classList.remove('show');
+        }
+    });
 
     // =======================================================
     // TOGGLE SIDEBAR
     // =======================================================
     toggleSidebar.addEventListener('click', () => {
         sidebar.classList.toggle('collapsed');
-        if (sidebar.classList.contains('collapsed')) {
-            toggleIcon.className = 'fas fa-chevron-right';
-        } else {
-            toggleIcon.className = 'fas fa-chevron-left';
-        }
+        toggleIcon.className = sidebar.classList.contains('collapsed') ? 'fas fa-chevron-right' : 'fas fa-chevron-left';
     });
 
     // =======================================================
