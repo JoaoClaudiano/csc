@@ -14,7 +14,7 @@
         "data": "22/02/2026",
         "horario": "16:00",
         "competicao": "Cearense",
-        "resultado": "A definir",
+        "resultado": "Ceará 2 x 2 Floresta",
         "transmissao": "YouTube"
     },
     {
@@ -36,6 +36,15 @@
         "transmissao": "Premiere"
     },
     {
+        "adversario": "Bahia",
+        "estadio": "Arena Fonte Nova",
+        "data": "22/04/2026",
+        "horario": "16:00",
+        "competicao": "Série B",
+        "resultado": "A definir",
+        "transmissao": "SporTV"
+    },
+    {
         "adversario": "Criciúma",
         "estadio": "Estádio Heriberto Hülse",
         "data": "10/05/2026",
@@ -45,12 +54,12 @@
         "transmissao": "Premiere"
     },
     {
-        "adversario": "Bahia",
-        "estadio": "Arena Fonte Nova",
-        "data": "22/04/2026",
-        "horario": "16:00",
+        "adversario": "Guarani",
+        "estadio": "Estádio Brinco de Ouro",
+        "data": "24/05/2026",
+        "horario": "19:00",
         "competicao": "Série B",
         "resultado": "A definir",
-        "transmissao": "SporTV"
+        "transmissao": "TV Brasil"
     }
 ]
