@@ -7,14 +7,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; padding: 0; font-family: Arial, sans-serif; }
-        #map { height: 90vh; width: 100%; }
-        #header {
-            background: #003366;
-            color: white;
-            padding: 10px;
-            text-align: center;
-            font-size: 1.5em;
-        }
+        #map { height: 100vh; }
         .legend {
             background: white;
             padding: 10px;
@@ -23,18 +16,15 @@
             line-height: 1.5;
         }
         .legend i {
+            display: inline-block;
             width: 18px;
             height: 18px;
-            float: left;
-            margin-right: 8px;
-            opacity: 0.8;
+            border-radius: 50%;
+            margin-right: 5px;
         }
-        .legend .circle-preto { background: #333; border-radius: 50%; }
-        .legend .circle-cinza { background: #aaa; border-radius: 50%; }
     </style>
 </head>
 <body>
-    <div id="header">⚽ Jogos do Ceará SC em 2026</div>
     <div id="map"></div>
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
@@ -45,68 +35,78 @@
             attribution: '© OpenStreetMap contributors'
         }).addTo(map);
 
-        const jogos = [
-            {
-                adversario: "Ferroviário",
-                local: "Arena Castelão",
-                coords: [-3.806, -38.526],
-                data: "12/02/2026",
-                resultado: "Ceará 5 x 1 Ferroviário",
-                status: "concluido"
-            },
-            {
-                adversario: "Floresta",
-                local: "Arena Castelão",
-                coords: [-3.806, -38.526],
-                data: "22/02/2026",
-                resultado: "A definir",
-                status: "futuro"
-            },
-            {
-                adversario: "Ponte Preta",
-                local: "Estádio Moisés Lucarelli",
-                coords: [-22.912, -47.050],
-                data: "31/03/2026",
-                resultado: "A definir",
-                status: "futuro"
-            }
-        ];
-
-        // Criar ícones personalizados
-        const iconPreto = L.divIcon({ className: 'custom-icon preto', html: '⚫', iconSize: [20, 20] });
-        const iconCinza = L.divIcon({ className: 'custom-icon cinza', html: '⚪', iconSize: [20, 20] });
-
-        const markers = [];
-
-        jogos.forEach(jogo => {
-            const icon = jogo.status === 'concluido' ? iconCinza : iconPreto;
-            const marker = L.marker(jogo.coords, { icon }).addTo(map);
-            marker.bindPopup(`
-                <b>Ceará x ${jogo.adversario}</b><br>
-                📅 ${jogo.data}<br>
-                📍 ${jogo.local}<br>
-                <strong>${jogo.resultado}</strong>
-            `);
-            markers.push(marker);
-        });
-
-        // Ajustar zoom para mostrar todos os marcadores
-        if (markers.length > 0) {
-            const group = L.featureGroup(markers);
-            map.fitBounds(group.getBounds().pad(0.2));
+        // Função para determinar status do resultado
+        function getResultadoStatus(jogo) {
+            if (jogo.resultado === "A definir") return "futuro";
+            const partes = jogo.resultado.split(' x ');
+            if (partes.length !== 2) return "desconhecido";
+            const golsCeara = parseInt(partes[0].replace('Ceará ', ''));
+            const golsAdv = parseInt(partes[1]);
+            if (isNaN(golsCeara) || isNaN(golsAdv)) return "desconhecido";
+            if (golsCeara > golsAdv) return "vitoria";
+            if (golsCeara < golsAdv) return "derrota";
+            return "empate";
         }
 
-        // Adicionar legenda
-        const legend = L.control({ position: 'bottomright' });
-        legend.onAdd = function(map) {
-            const div = L.DomUtil.create('div', 'legend');
-            div.innerHTML = `
-                <div><i class="circle-preto"></i> Jogo futuro</div>
-                <div><i class="circle-cinza"></i> Jogo realizado</div>
-            `;
-            return div;
-        };
-        legend.addTo(map);
+        // Função para criar ícone colorido
+        function getIconePorStatus(status) {
+            const cores = {
+                vitoria: '#28a745',
+                derrota: '#dc3545',
+                empate: '#ffc107',
+                futuro: '#6c757d',
+                desconhecido: '#6c757d'
+            };
+            const cor = cores[status] || cores.desconhecido;
+            return L.divIcon({
+                html: `<div style="background-color: ${cor}; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; box-shadow: 0 0 4px rgba(0,0,0,0.5);"></div>`,
+                iconSize: [20, 20],
+                popupAnchor: [0, -10]
+            });
+        }
+
+        // Carregar dados de um arquivo JSON
+        fetch('jogos.json')
+            .then(response => response.json())
+            .then(jogos => {
+                const markers = [];
+                jogos.forEach(jogo => {
+                    const status = getResultadoStatus(jogo);
+                    const icone = getIconePorStatus(status);
+                    const marker = L.marker(jogo.coords, { icon: icone }).addTo(map);
+                    marker.bindPopup(`
+                        <b>Ceará x ${jogo.adversario}</b><br>
+                        📅 ${jogo.data}<br>
+                        📍 ${jogo.local}<br>
+                        <strong>${jogo.resultado}</strong>
+                    `);
+                    markers.push(marker);
+                });
+
+                // Ajustar zoom
+                if (markers.length > 0) {
+                    const group = L.featureGroup(markers);
+                    map.fitBounds(group.getBounds().pad(0.2));
+                }
+
+                // Legenda
+                const legend = L.control({ position: 'bottomright' });
+                legend.onAdd = function() {
+                    const div = L.DomUtil.create('div', 'legend');
+                    div.innerHTML = `
+                        <div><i style="background:#28a745;"></i> Vitória</div>
+                        <div><i style="background:#dc3545;"></i> Derrota</div>
+                        <div><i style="background:#ffc107;"></i> Empate</div>
+                        <div><i style="background:#6c757d;"></i> Futuro / Desconhecido</div>
+                    `;
+                    return div;
+                };
+                legend.addTo(map);
+            })
+            .catch(error => {
+                console.error('Erro ao carregar jogos:', error);
+                alert('Não foi possível carregar os dados dos jogos.');
+            });
     </script>
 </body>
 </html>
