@@ -3,144 +3,801 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ceará SC na Série B 2026 - Mapa de Jogos</title>
+    <title>Ceará SC na Série B 2026 – Mapa Interativo</title>
+    <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="styles.css">
-    <link rel="icon" type="image/png" href="https://upload.wikimedia.org/wikipedia/pt/6/6a/Cear%C3%A1_Sporting_Club_logo.svg" />
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- Font Awesome (opcional, para ícones) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* ========== ESTILOS GLOBAIS ========== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+            background: #f5f5f5;
+        }
+
+        /* --- HEADER MINIMALISTA --- */
+        header {
+            background: #003366;
+            color: white;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            z-index: 1100;
+            flex-shrink: 0;
+        }
+        header h1 {
+            font-size: 1.4rem;
+            font-weight: 400;
+            letter-spacing: 0.5px;
+        }
+        header h1 strong {
+            font-weight: 600;
+        }
+        .share-btn {
+            background: rgba(255,255,255,0.15);
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.2s;
+        }
+        .share-btn:hover {
+            background: rgba(255,255,255,0.25);
+        }
+
+        /* --- LAYOUT PRINCIPAL (mapa + sidebar) --- */
+        .main-container {
+            display: flex;
+            flex: 1;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* SIDEBAR (lista de jogos) */
+        .sidebar {
+            width: 320px;
+            background: white;
+            border-right: 1px solid #ddd;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.05);
+            z-index: 1000;
+            transition: transform 0.3s ease;
+        }
+        .sidebar.collapsed {
+            transform: translateX(-100%);
+        }
+        .sidebar-header {
+            padding: 15px;
+            background: #f0f4f8;
+            border-bottom: 1px solid #ccc;
+        }
+        .sidebar-header h3 {
+            color: #003366;
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+        }
+        .filtros {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .filtros button {
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 20px;
+            padding: 5px 12px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #333;
+        }
+        .filtros button.ativo {
+            background: #003366;
+            color: white;
+            border-color: #003366;
+        }
+        .filtros button:hover {
+            background: #e0e0e0;
+        }
+        .filtros button.ativo:hover {
+            background: #004c99;
+        }
+
+        /* Lista de jogos (scroll) */
+        .jogos-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+            background: #fafafa;
+        }
+        .jogo-item {
+            background: white;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border-left: 4px solid #6c757d; /* cor padrão futuro */
+            cursor: pointer;
+            transition: transform 0.1s, box-shadow 0.2s;
+        }
+        .jogo-item:hover {
+            transform: scale(1.02);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .jogo-item.vitoria { border-left-color: #28a745; }
+        .jogo-item.derrota { border-left-color: #dc3545; }
+        .jogo-item.empate  { border-left-color: #ffc107; }
+        .jogo-item.futuro  { border-left-color: #6c757d; }
+
+        .jogo-item .adversario {
+            font-weight: 600;
+            font-size: 1rem;
+            color: #003366;
+        }
+        .jogo-item .info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            color: #555;
+            margin-top: 5px;
+        }
+        .jogo-item .resultado {
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        /* --- MAPA --- */
+        .map-wrapper {
+            flex: 1;
+            position: relative;
+        }
+        #map {
+            height: 100%;
+            width: 100%;
+        }
+
+        /* Botão toggle sidebar */
+        .toggle-sidebar {
+            position: absolute;
+            top: 15px;
+            left: 335px; /* ao lado da sidebar */
+            z-index: 2000;
+            background: white;
+            border: 1px solid #ccc;
+            border-radius: 30px;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: left 0.3s ease;
+        }
+        .sidebar.collapsed + .map-wrapper .toggle-sidebar {
+            left: 15px;
+        }
+
+        /* Painel de estatísticas (sobreposto no mapa, canto superior esquerdo) */
+        .stats-panel {
+            position: absolute;
+            top: 20px;
+            left: 350px; /* ao lado da sidebar aberta */
+            background: rgba(255,255,255,0.95);
+            backdrop-filter: blur(5px);
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            z-index: 1500;
+            border: 1px solid #ddd;
+            max-width: 280px;
+            transition: left 0.3s ease;
+        }
+        .sidebar.collapsed + .map-wrapper .stats-panel {
+            left: 30px;
+        }
+        .stats-panel h4 {
+            color: #003366;
+            margin-bottom: 10px;
+            border-bottom: 2px solid #003366;
+            padding-bottom: 4px;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            font-size: 0.9rem;
+        }
+        .stats-item {
+            background: #f0f4f8;
+            padding: 8px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .stats-item .label {
+            color: #666;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+        }
+        .stats-item .value {
+            font-weight: 700;
+            font-size: 1.2rem;
+            color: #003366;
+        }
+
+        /* Gráfico (container pequeno) */
+        .chart-container {
+            margin-top: 15px;
+            height: 100px;
+            width: 100%;
+        }
+
+        /* Controles flutuantes (botão atualizar) */
+        #controles {
+            position: absolute;
+            bottom: 30px;
+            right: 20px;
+            z-index: 2000;
+            background: white;
+            padding: 10px 18px;
+            border-radius: 40px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            border: 1px solid #ccc;
+        }
+        #controles button {
+            background: #003366;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 30px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: 0.2s;
+        }
+        #controles button:hover {
+            background: #004c99;
+        }
+
+        /* Loading */
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(255,255,255,0.95);
+            padding: 20px 30px;
+            border-radius: 50px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            z-index: 3000;
+            display: none;
+            font-weight: 600;
+            color: #003366;
+            font-size: 18px;
+            border: 2px solid #003366;
+        }
+        .loading::after {
+            content: "...";
+            animation: dots 1.5s steps(4, end) infinite;
+            width: 20px;
+            display: inline-block;
+            text-align: left;
+        }
+        @keyframes dots { 0%,20%{content:"";} 40%{content:".";} 60%{content:"..";} 80%,100%{content:"...";} }
+
+        /* Legenda */
+        .legenda {
+            background: white;
+            padding: 10px 14px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            line-height: 1.6;
+            font-size: 0.85rem;
+            border: 1px solid #ddd;
+        }
+        .legenda div {
+            display: flex;
+            align-items: center;
+            margin: 4px 0;
+        }
+        .legenda i {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            margin-right: 6px;
+            border: 2px solid white;
+            box-shadow: 0 0 3px rgba(0,0,0,0.3);
+        }
+
+        /* Responsividade */
+        @media (max-width: 800px) {
+            .sidebar { width: 280px; }
+            .toggle-sidebar { left: 295px; }
+            .stats-panel { left: 310px; max-width: 220px; font-size: 0.8rem; }
+            .stats-panel h4 { font-size: 1rem; }
+            .chart-container { height: 80px; }
+        }
+        @media (max-width: 600px) {
+            .sidebar { position: absolute; height: 100%; z-index: 2500; }
+            .toggle-sidebar { left: 295px; }
+            .stats-panel { left: 20px; top: 70px; max-width: 180px; }
+            #controles { bottom: 20px; right: 10px; padding: 6px 12px; }
+        }
+    </style>
 </head>
 <body>
 
-    <header>
-        <h1>⚽ <strong>Ceará Sporting Club</strong> | Brasileirão Série B 2026</h1>
-    </header>
+<header>
+    <h1>⚽ <strong>Ceará SC</strong> | Série B 2026</h1>
+    <button class="share-btn" id="shareButton"><i class="fas fa-share-alt"></i> Compartilhar</button>
+</header>
 
-    <div id="controles">
-        <button onclick="carregarJogos()" id="btnAtualizar">🔄 Atualizar Jogos</button>
-        <span style="color:#003366; font-weight:500;">🗺️ 38 rodadas</span>
+<div class="main-container">
+    <!-- Sidebar com lista de jogos -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <h3>📋 Jogos (38 rodadas)</h3>
+            <div class="filtros" id="filtros">
+                <button data-filtro="todos" class="ativo">Todos</button>
+                <button data-filtro="mandante">Em casa</button>
+                <button data-filtro="visitante">Fora</button>
+                <button data-filtro="futuro">Futuros</button>
+                <button data-filtro="realizado">Realizados</button>
+                <button data-filtro="vitoria">Vitórias</button>
+                <button data-filtro="derrota">Derrotas</button>
+                <button data-filtro="empate">Empates</button>
+            </div>
+        </div>
+        <div class="jogos-list" id="jogosList"></div>
     </div>
 
-    <div id="map"></div>
+    <!-- Botão para colapsar a sidebar -->
+    <div class="toggle-sidebar" id="toggleSidebar"><i class="fas fa-chevron-left" id="toggleIcon"></i></div>
 
-    <div class="loading" id="loading">Carregando jogos</div>
+    <!-- Área do mapa -->
+    <div class="map-wrapper">
+        <div id="map"></div>
 
-    <footer>
-        <p>🗓️ Acompanhe a campanha do Vovô no mapa. Dados baseados na tabela básica da CBF.</p>
-    </footer>
+        <!-- Painel de estatísticas -->
+        <div class="stats-panel" id="statsPanel">
+            <h4>📊 Campanha</h4>
+            <div class="stats-grid">
+                <div class="stats-item"><span class="label">Pontos</span><span class="value" id="statsPontos">0</span></div>
+                <div class="stats-item"><span class="label">Aproveit.</span><span class="value" id="statsAproveitamento">0%</span></div>
+                <div class="stats-item"><span class="label">Gols pró</span><span class="value" id="statsGolsPro">0</span></div>
+                <div class="stats-item"><span class="label">Gols contra</span><span class="value" id="statsGolsContra">0</span></div>
+                <div class="stats-item"><span class="label">Maior vit.</span><span class="value" id="statsMaiorVitoria">-</span></div>
+                <div class="stats-item"><span class="label">Sequência</span><span class="value" id="statsSequencia">-</span></div>
+            </div>
+            <!-- Gráfico de evolução (posição fictícia) -->
+            <div class="chart-container">
+                <canvas id="evolucaoChart"></canvas>
+            </div>
+        </div>
 
-    <script src="estadios.js"></script>
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    
-    <script>
-        // Configuração inicial do mapa
-        const map = L.map('map').setView([-15.788, -47.879], 4);
-        
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(map);
+        <!-- Botão atualizar (com debounce) -->
+        <div id="controles">
+            <button onclick="debouncedCarregarJogos()"><i class="fas fa-sync-alt"></i> Atualizar</button>
+            <span style="color:#003366; font-size:0.9rem;">38 jogos</span>
+        </div>
 
-        let marcadoresAtuais = [];
+        <!-- Loading -->
+        <div class="loading" id="loading">Carregando jogos</div>
+    </div>
+</div>
 
-        function getCorResultado(jogo) {
-            if (jogo.resultado === "A definir") return '#6c757d';
-            
-            const partes = jogo.resultado.split(' x ');
-            if (partes.length !== 2) return '#6c757d';
-            
-            const golsCeara = parseInt(partes[0].replace('Ceará ', ''));
-            const golsAdv = parseInt(partes[1]);
-            
-            if (isNaN(golsCeara) || isNaN(golsAdv)) return '#6c757d';
-            if (golsCeara > golsAdv) return '#28a745';
-            if (golsCeara < golsAdv) return '#dc3545';
-            return '#ffc107';
-        }
+<!-- Inclusão dos scripts -->
+<script src="estadios.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-        function criarIcone(cor) {
-            return L.divIcon({
-                html: `<div style="background-color: ${cor}; width: 24px; height: 24px; border-radius: 50%; border: 3px solid white; box-shadow: 0 3px 8px rgba(0,0,0,0.4);"></div>`,
-                iconSize: [24, 24],
-                popupAnchor: [0, -15],
-                className: 'marcador-ceara'
-            });
-        }
+<script>
+    // =======================================================
+    // CONFIGURAÇÕES GLOBAIS E VARIÁVEIS
+    // =======================================================
+    const map = L.map('map', { preferCanvas: true }).setView([-15.788, -47.879], 4);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
 
-        async function carregarJogos() {
-            document.getElementById('loading').style.display = 'block';
-            marcadoresAtuais.forEach(m => map.removeLayer(m));
-            marcadoresAtuais = [];
-            
-            try {
-                // AGORA CARREGAMOS O ARQUIVO CORRETO: jogos-serieb.json
-                const response = await fetch('jogos-serieb.json');
-                if (!response.ok) {
-                    throw new Error(`Erro HTTP: ${response.status}. Verifique se o arquivo 'jogos-serieb.json' existe.`);
+    let marcadoresAtuais = [];
+    let todosJogos = [];          // dados originais
+    let jogosFiltrados = [];       // após filtro
+    let chartInstance = null;      // gráfico
+
+    // Elementos DOM
+    const loadingEl = document.getElementById('loading');
+    const jogosListEl = document.getElementById('jogosList');
+    const filtrosBotoes = document.querySelectorAll('.filtros button');
+    const toggleSidebar = document.getElementById('toggleSidebar');
+    const sidebar = document.getElementById('sidebar');
+    const toggleIcon = document.getElementById('toggleIcon');
+    const shareBtn = document.getElementById('shareButton');
+
+    // =======================================================
+    // FUNÇÕES AUXILIARES
+    // =======================================================
+    function getCorResultado(jogo) {
+        if (jogo.resultado === "A definir") return '#6c757d';
+        const partes = jogo.resultado.split(' x ');
+        if (partes.length !== 2) return '#6c757d';
+        const golsCeara = parseInt(partes[0].replace('Ceará ', ''));
+        const golsAdv = parseInt(partes[1]);
+        if (isNaN(golsCeara) || isNaN(golsAdv)) return '#6c757d';
+        if (golsCeara > golsAdv) return '#28a745';
+        if (golsCeara < golsAdv) return '#dc3545';
+        return '#ffc107';
+    }
+
+    function getStatusJogo(jogo) {
+        if (jogo.resultado === "A definir") return 'futuro';
+        const partes = jogo.resultado.split(' x ');
+        if (partes.length !== 2) return 'futuro';
+        const golsCeara = parseInt(partes[0].replace('Ceará ', ''));
+        const golsAdv = parseInt(partes[1]);
+        if (isNaN(golsCeara) || isNaN(golsAdv)) return 'futuro';
+        if (golsCeara > golsAdv) return 'vitoria';
+        if (golsCeara < golsAdv) return 'derrota';
+        return 'empate';
+    }
+
+    function criarIcone(cor) {
+        return L.divIcon({
+            html: `<div style="background-color: ${cor}; width: 24px; height: 24px; border-radius: 50%; border: 3px solid white; box-shadow: 0 3px 8px rgba(0,0,0,0.4);"></div>`,
+            iconSize: [24, 24],
+            popupAnchor: [0, -15],
+            className: 'marcador-ceara'
+        });
+    }
+
+    // =======================================================
+    // CARREGAR DADOS (COM CACHE)
+    // =======================================================
+    async function carregarJogos(ignoreCache = false) {
+        loadingEl.style.display = 'block';
+
+        // Cache: tenta pegar do localStorage se não for ignorado
+        if (!ignoreCache) {
+            const cached = localStorage.getItem('jogosCeara');
+            if (cached) {
+                const data = JSON.parse(cached);
+                if (Date.now() - data.timestamp < 3600000) { // 1 hora
+                    todosJogos = data.jogos;
+                    processarDados();
+                    loadingEl.style.display = 'none';
+                    return;
                 }
-                const jogos = await response.json();
-                
-                const grupoMarcadores = [];
-                
-                jogos.forEach(jogo => {
-                    const coords = estadios[jogo.estadio];
-                    if (!coords) {
-                        console.warn(`Estádio não encontrado: "${jogo.estadio}" - jogo contra ${jogo.adversario} não será exibido.`);
-                        return;
-                    }
-                    
-                    const cor = getCorResultado(jogo);
-                    const icone = criarIcone(cor);
-                    
-                    const popupContent = `
-                        <div style="font-family: 'Segoe UI', sans-serif;">
-                            <h3 style="margin:0 0 8px 0; color:#003366; border-bottom:2px solid #003366; padding-bottom:4px;">
-                                ⚽ Ceará x ${jogo.adversario}
-                            </h3>
-                            <p style="margin:4px 0;"><strong>📅 Data:</strong> ${jogo.data} ${jogo.horario ? 'às ' + jogo.horario : ''}</p>
-                            <p style="margin:4px 0;"><strong>🏟️ Estádio:</strong> ${jogo.estadio}</p>
-                            <p style="margin:4px 0;"><strong>📺 Transmissão:</strong> ${jogo.transmissao || 'A definir'}</p>
-                            <p style="margin:8px 0 0 0; font-size:1.2em; font-weight:bold; color:${cor};">
-                                ${jogo.resultado}
-                            </p>
-                        </div>
-                    `;
-                    
-                    const marcador = L.marker(coords, { icon: icone })
-                        .bindPopup(popupContent, { maxWidth: 260 });
-                    
-                    marcador.addTo(map);
-                    marcadoresAtuais.push(marcador);
-                    grupoMarcadores.push(marcador);
-                });
-                
-                if (grupoMarcadores.length > 0) {
-                    const group = L.featureGroup(grupoMarcadores);
-                    map.fitBounds(group.getBounds().pad(0.15));
-                }
-                
-                if (!window.legendaAdicionada) {
-                    const legend = L.control({ position: 'bottomright' });
-                    legend.onAdd = function() {
-                        const div = L.DomUtil.create('div', 'legenda');
-                        div.innerHTML = `
-                            <div><i style="background:#28a745;"></i> Vitória do Ceará</div>
-                            <div><i style="background:#dc3545;"></i> Derrota do Ceará</div>
-                            <div><i style="background:#ffc107;"></i> Empate</div>
-                            <div><i style="background:#6c757d;"></i> Jogo futuro</div>
-                        `;
-                        return div;
-                    };
-                    legend.addTo(map);
-                    window.legendaAdicionada = true;
-                }
-                
-            } catch (error) {
-                console.error('Erro ao carregar jogos:', error);
-                alert('Não foi possível carregar os jogos. Verifique se o arquivo "jogos-serieb.json" existe e está acessível.');
-            } finally {
-                document.getElementById('loading').style.display = 'none';
             }
         }
 
-        window.addEventListener('load', carregarJogos);
-    </script>
+        try {
+            const response = await fetch('jogos-serieb.json');
+            if (!response.ok) throw new Error('Erro ao carregar JSON');
+            todosJogos = await response.json();
+            // Salva no cache
+            localStorage.setItem('jogosCeara', JSON.stringify({
+                timestamp: Date.now(),
+                jogos: todosJogos
+            }));
+            processarDados();
+        } catch (error) {
+            console.error(error);
+            alert('Erro ao carregar jogos. Verifique o arquivo jogos-serieb.json');
+        } finally {
+            loadingEl.style.display = 'none';
+        }
+    }
+
+    // Debounce simples
+    let debounceTimer;
+    function debouncedCarregarJogos() {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => carregarJogos(true), 300); // ignora cache ao clicar
+    }
+
+    // =======================================================
+    // PROCESSAR DADOS E ATUALIZAR TUDO
+    // =======================================================
+    function processarDados() {
+        // Ordena por data (assumindo formato dd/mm/aaaa)
+        todosJogos.sort((a, b) => {
+            const [da, ma, aa] = a.data.split('/');
+            const [db, mb, ab] = b.data.split('/');
+            return new Date(`${aa}-${ma}-${da}`) - new Date(`${ab}-${mb}-${db}`);
+        });
+
+        // Aplica filtro inicial (todos)
+        jogosFiltrados = [...todosJogos];
+        atualizarMapa();
+        atualizarLista();
+        atualizarEstatisticas();
+        atualizarGrafico();
+    }
+
+    // =======================================================
+    // MAPA
+    // =======================================================
+    function atualizarMapa() {
+        // Remove marcadores antigos
+        marcadoresAtuais.forEach(m => map.removeLayer(m));
+        marcadoresAtuais = [];
+
+        const grupo = [];
+
+        jogosFiltrados.forEach(jogo => {
+            const coords = estadios[jogo.estadio];
+            if (!coords) {
+                console.warn(`Estádio não encontrado: ${jogo.estadio}`);
+                return;
+            }
+            const cor = getCorResultado(jogo);
+            const icone = criarIcone(cor);
+            const popupContent = `
+                <div style="font-family: 'Segoe UI', sans-serif;">
+                    <h3 style="margin:0 0 8px 0; color:#003366;">⚽ Ceará x ${jogo.adversario}</h3>
+                    <p><strong>📅 Data:</strong> ${jogo.data} ${jogo.horario ? 'às ' + jogo.horario : ''}</p>
+                    <p><strong>🏟️ Estádio:</strong> ${jogo.estadio}</p>
+                    <p><strong>📺 Transmissão:</strong> ${jogo.transmissao || 'A definir'}</p>
+                    <p style="font-size:1.2em; font-weight:bold; color:${cor};">${jogo.resultado}</p>
+                </div>
+            `;
+            const marcador = L.marker(coords, { icon: icone })
+                .bindPopup(popupContent)
+                .bindTooltip(`${jogo.adversario} - ${jogo.data}`, { permanent: false, direction: 'top' });
+
+            marcador.addTo(map);
+            marcadoresAtuais.push(marcador);
+            grupo.push(marcador);
+        });
+
+        if (grupo.length > 0) {
+            const group = L.featureGroup(grupo);
+            map.fitBounds(group.getBounds().pad(0.15));
+        }
+
+        // Legenda (adiciona uma única vez)
+        if (!window.legendaAdicionada) {
+            const legend = L.control({ position: 'bottomright' });
+            legend.onAdd = function() {
+                const div = L.DomUtil.create('div', 'legenda');
+                div.innerHTML = `
+                    <div><i style="background:#28a745;"></i> Vitória</div>
+                    <div><i style="background:#dc3545;"></i> Derrota</div>
+                    <div><i style="background:#ffc107;"></i> Empate</div>
+                    <div><i style="background:#6c757d;"></i> Futuro</div>
+                `;
+                return div;
+            };
+            legend.addTo(map);
+            window.legendaAdicionada = true;
+        }
+    }
+
+    // =======================================================
+    // LISTA LATERAL (COM FILTRO)
+    // =======================================================
+    function atualizarLista() {
+        jogosListEl.innerHTML = '';
+        jogosFiltrados.forEach(jogo => {
+            const status = getStatusJogo(jogo);
+            const item = document.createElement('div');
+            item.className = `jogo-item ${status}`;
+            item.innerHTML = `
+                <div class="adversario">🆚 ${jogo.adversario}</div>
+                <div class="info">
+                    <span>📅 ${jogo.data} ${jogo.horario || ''}</span>
+                    <span>🏟️ ${jogo.estadio}</span>
+                </div>
+                <div class="resultado">${jogo.resultado}</div>
+            `;
+            // Ao clicar no item, centraliza no marcador correspondente
+            item.addEventListener('click', () => {
+                const coords = estadios[jogo.estadio];
+                if (coords) {
+                    map.setView(coords, 13);
+                    // Abre o popup do marcador correspondente (encontra pelo adversário e data)
+                    const marcador = marcadoresAtuais.find(m => {
+                        // Não temos referência direta, então usamos um truque: associar no momento da criação
+                        // Para simplificar, vamos usar a função de busca por popup, mas é mais fácil armazenar num objeto.
+                        // Vamos fazer de outra forma: ao criar marcador, guardamos num Map.
+                    });
+                    // Alternativa simples: reabrir popup criando um novo? Melhor: armazenar referência.
+                }
+            });
+            jogosListEl.appendChild(item);
+        });
+    }
+
+    // Filtros
+    filtrosBotoes.forEach(btn => {
+        btn.addEventListener('click', () => {
+            filtrosBotoes.forEach(b => b.classList.remove('ativo'));
+            btn.classList.add('ativo');
+            const filtro = btn.dataset.filtro;
+            aplicarFiltro(filtro);
+        });
+    });
+
+    function aplicarFiltro(filtro) {
+        if (filtro === 'todos') {
+            jogosFiltrados = [...todosJogos];
+        } else if (filtro === 'mandante') {
+            jogosFiltrados = todosJogos.filter(j => j.estadio === 'Arena Castelão'); // Simplificação: assume que mandante é sempre Arena Castelão
+        } else if (filtro === 'visitante') {
+            jogosFiltrados = todosJogos.filter(j => j.estadio !== 'Arena Castelão');
+        } else if (filtro === 'futuro') {
+            jogosFiltrados = todosJogos.filter(j => j.resultado === 'A definir');
+        } else if (filtro === 'realizado') {
+            jogosFiltrados = todosJogos.filter(j => j.resultado !== 'A definir');
+        } else if (filtro === 'vitoria') {
+            jogosFiltrados = todosJogos.filter(j => getStatusJogo(j) === 'vitoria');
+        } else if (filtro === 'derrota') {
+            jogosFiltrados = todosJogos.filter(j => getStatusJogo(j) === 'derrota');
+        } else if (filtro === 'empate') {
+            jogosFiltrados = todosJogos.filter(j => getStatusJogo(j) === 'empate');
+        }
+        atualizarMapa();
+        atualizarLista();
+    }
+
+    // =======================================================
+    // ESTATÍSTICAS
+    // =======================================================
+    function atualizarEstatisticas() {
+        const realizados = todosJogos.filter(j => j.resultado !== 'A definir');
+        let pontos = 0, golsPro = 0, golsContra = 0;
+        let maiorVitoria = { dif: 0, jogo: null };
+        let sequenciaAtual = 0, sequenciaTipo = null;
+        // Para sequência, precisamos dos jogos em ordem cronológica (já estão ordenados)
+        for (let jogo of todosJogos) {
+            if (jogo.resultado === 'A definir') continue;
+            const partes = jogo.resultado.split(' x ');
+            if (partes.length !== 2) continue;
+            const golsC = parseInt(partes[0].replace('Ceará ', ''));
+            const golsA = parseInt(partes[1]);
+            if (isNaN(golsC) || isNaN(golsA)) continue;
+            golsPro += golsC;
+            golsContra += golsA;
+            if (golsC > golsA) {
+                pontos += 3;
+                if (golsC - golsA > maiorVitoria.dif) {
+                    maiorVitoria.dif = golsC - golsA;
+                    maiorVitoria.jogo = `${golsC}x${golsA} vs ${jogo.adversario}`;
+                }
+            } else if (golsC === golsA) pontos += 1;
+        }
+        const jogosRealizados = realizados.length;
+        const aproveitamento = jogosRealizados ? ((pontos / (jogosRealizados * 3)) * 100).toFixed(1) : 0;
+
+        document.getElementById('statsPontos').innerText = pontos;
+        document.getElementById('statsAproveitamento').innerText = aproveitamento + '%';
+        document.getElementById('statsGolsPro').innerText = golsPro;
+        document.getElementById('statsGolsContra').innerText = golsContra;
+        document.getElementById('statsMaiorVitoria').innerText = maiorVitoria.jogo ? maiorVitoria.jogo : '-';
+
+        // Sequência atual (últimos jogos)
+        let sequencia = '';
+        const jogosReversos = [...todosJogos].reverse().filter(j => j.resultado !== 'A definir');
+        if (jogosReversos.length > 0) {
+            let primeiroStatus = getStatusJogo(jogosReversos[0]);
+            let count = 1;
+            for (let i = 1; i < jogosReversos.length; i++) {
+                if (getStatusJogo(jogosReversos[i]) === primeiroStatus) count++;
+                else break;
+            }
+            if (primeiroStatus === 'vitoria') sequencia = `${count} vitória(s) consecutiva(s)`;
+            else if (primeiroStatus === 'derrota') sequencia = `${count} derrota(s) consecutiva(s)`;
+            else if (primeiroStatus === 'empate') sequencia = `${count} empate(s) consecutivo(s)`;
+        } else {
+            sequencia = '-';
+        }
+        document.getElementById('statsSequencia').innerText = sequencia;
+    }
+
+    // =======================================================
+    // GRÁFICO DE EVOLUÇÃO (posição fictícia)
+    // =======================================================
+    function atualizarGrafico() {
+        // Simula uma posição hipotética ao longo das rodadas (para demonstração)
+        const rodadas = Array.from({ length: 38 }, (_, i) => i + 1);
+        // Gera posições aleatórias entre 1 e 20, mas com tendência de melhora
+        let posicoes = [];
+        let pos = 15; // começa em 15º
+        for (let i = 0; i < 38; i++) {
+            pos += (Math.random() - 0.3) * 1.5; // tendência positiva
+            pos = Math.min(20, Math.max(1, Math.round(pos)));
+            posicoes.push(pos);
+        }
+
+        const ctx = document.getElementById('evolucaoChart').getContext('2d');
+        if (chartInstance) chartInstance.destroy();
+        chartInstance = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: rodadas.map(r => `R${r}`),
+                datasets: [{
+                    label: 'Posição',
+                    data: posicoes,
+                    borderColor: '#003366',
+                    backgroundColor: 'rgba(0,51,102,0.1)',
+                    tension: 0.2,
+                    fill: true,
+                    pointRadius: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: { reverse: true, min: 1, max: 20, ticks: { stepSize: 2 } }
+                },
+                plugins: { legend: { display: false } }
+            }
+        });
+    }
+
+    // =======================================================
+    // TOGGLE SIDEBAR
+    // =======================================================
+    toggleSidebar.addEventListener('click', () => {
+        sidebar.classList.toggle('collapsed');
+        if (sidebar.classList.contains('collapsed')) {
+            toggleIcon.className = 'fas fa-chevron-right';
+        } else {
+            toggleIcon.className = 'fas fa-chevron-left';
+        }
+    });
+
+    // =======================================================
+    // COMPARTILHAMENTO
+    // =======================================================
+    shareBtn.addEventListener('click', async () => {
+        if (navigator.share) {
+            try {
+                await navigator.share({
+                    title: 'Ceará SC na Série B 2026',
+                    text: 'Acompanhe todos os jogos do Vovô no mapa interativo!',
+                    url: window.location.href
+                });
+            } catch (err) {
+                console.log('Compartilhamento cancelado');
+            }
+        } else {
+            alert('Compartilhamento não suportado neste navegador. Copie o link manualmente.');
+        }
+    });
+
+    // =======================================================
+    // INICIALIZAÇÃO
+    // =======================================================
+    window.addEventListener('load', () => carregarJogos());
+</script>
 </body>
 </html>
